@@ -1,4 +1,4 @@
-from openpyxl.styles import Font, Color, Alignment, borders, Border, Side, PatternFill, colors
+from openpyxl.styles import Font, Color, Alignment, borders, Border, Side, PatternFill, colors, Font
 from openpyxl import Workbook
 from pprint import pprint
 import math
@@ -123,18 +123,12 @@ def write(WS, ROW, COL, DATA, BORDER=border, FONT=font): # Input Switch Object
     write_cell.font = FONT
 
 
-def write_obj(WS, OBJ, keylist, ROW, COL): # Input Interface Object for OBJ and Switch Object for HL
+def write_obj(WS, OBJ_List, KEYLIST, ROW, COL): # Input Object to write
     COL1 = COL
     ROW1 = ROW
-    for a in keylist:
-        try:
-            b = getattr(OBJ, a)
-            WS.write(ROW1, COL1, b)
-        except:
-            print(a + ' Does not exist in ' + OBJ.name)
-        finally:
-            COL1 = COL1 + 1
-    return ROW1 + 1
+    for a in OBJ_List:
+        ROW1 = write_line(WS, a, KEYLIST, ROW1, COL1)
+    return ROW1
 
 def write_fill(WS, ROW, COL, DATA, FILL=fill, BORDER=border, FONT=font): # Input Switch Object
     COL1 = COL
@@ -179,9 +173,9 @@ def write_portmap(WS, OBJ, KEYLIST, ROW, COL):
     return ROW1 + 1
 
 
-def write_merge(WS, startROW, startCOL, endROW, endCOL, DATA, FILL=blue_fill, BORDER=border, FONT=white_font):
-    write_fill(WS, startROW, startCOL, DATA, FILL, BORDER, FONT)
-    WS.merge_cells(start_row=startROW, start_column=startCOL, end_row=endROW, end_column=endCOL)
+def write_merge(WS, startROW, startCOL, endROW, endCOL, DATA):
+    write(WS, startROW, startCOL, DATA)
+    WS.merge_cells(start_row=startROW, start_column=startCOL, end_row=endROW, end_column=endCOL - 1)
     return endROW + 1
 
 
@@ -232,6 +226,22 @@ def write_family_hl(WS, parent, family, keys, ROW, COL, D_FORMAT):
                     ROW = write_line(WS, b, keys, ROW, COL, D_FORMAT)
 
     return ROW
+
+
+
+def setalignment(WS, ROW, COL, horizontal='center', vertical='center'):
+    write_cell = WS.cell(row=ROW, column=COL)
+    write_cell.alignment = Alignment(horizontal=horizontal, vertical=vertical)
+
+def setfontcolor(WS, ROW, COL, COLOR):
+    write_cell = WS.cell(row=ROW, column=COL)
+    write_cell.font = Font(color=COLOR)
+
+def setfill(WS, ROW, COL, COLOR):
+    write_cell = WS.cell(row=ROW, column=COL)
+    write_cell.fill = PatternFill(fill_type='solid',
+                                  start_color=COLOR,
+                                  end_color=COLOR)
 
 def setformatcolumn(WS, ROW, COL, FORMAT):
     WS.write(ROW, COL, VALUE, FORMAT)

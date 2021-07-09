@@ -1,4 +1,4 @@
-from write2excel import writeDevice
+from write2excel import writeDevice, buildtable, writetable
 from datetime import date
 from pullConfig import show_collection, getBackup
 import login
@@ -8,7 +8,22 @@ import json
 
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+badFill = 'FFC7CE'
+badFont = '9C0006'
+goodFill = 'C6EFCE'
+goodFont = '006100'
+neutralFill = 'FFEB9C'
+neutralFont = '9C5700'
+normalFill = 'FFFFFF'
+normalFont = '000000'
 
+portTests = [{'data': 'connected', 'fill': goodFill, 'font': goodFont},
+             {'data': 'notconnect', 'fill': neutralFill, 'font': neutralFont},
+             {'data': 'suspnd', 'fill': badFill, 'font': badFont},
+             {'data': 'noOperMem', 'fill': badFill, 'font': badFont},
+             {'data': 'down', 'fill': badFill, 'font': badFont},
+             {'data': 'errDisable', 'fill': badFill, 'font': badFont},]
+portstatus = [{'key': 'state', 'test': portTests}]
 
 def print_setup(time='0000'):
     # Use a breakpoint in the code line below to debug your script.
@@ -45,9 +60,17 @@ if __name__ == '__main__':
         running_cfg = getBackup(ssh, backup_file)
         print(f'Disconnecting SSH Session to {ip}')
         ssh.disconnect()
-        write_output(device)
-        writeDevice(device)
+        #write_output(device)
+        #writeDevice(device)
         device_list.append(device)
+    filename = 'test0001.xlsx'
+    if device_list == []:
+        print('No Devices Accessed. Exiting...')
+    else:
+        nxosTable = buildtable(device_list, 'Nexus Switches')
+        writetable(nxosTable, 'testoutput.xlsx')
 
-
+        for a in device_list:
+            portmapTable = buildtable(a.eth, 'Port-Map')
+            writetable(portmapTable, 'Port-Map.xlsx', hl=True, TEST=portstatus) # Adds highlight information
 

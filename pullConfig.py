@@ -29,11 +29,14 @@ def show_collection(session):
     show['show_feature'] = cli_cmd_json(session, 'show feature | json', delay=2)
     show['show_int_status'] = cli_cmd_json(session, 'show interface status | json', delay=2)
     show['show_ip_int'] = cli_cmd_json(session, 'show ip interface vrf all | json', delay=2)
+    show['show_vrf_interface'] = cli_cmd_json(session, 'show vrf interface | json', delay=2)
     show['show_ip_route'] = cli_cmd_json(session, 'show ip route vrf all | json', delay=2)
     show['show_cdp_nei'] = cli_cmd_json(session, 'show cdp neighbor | json', delay=2)
     show['show_lldp_nei'] = cli_cmd_json(session, 'show lldp neighbor | json', delay=2)
     show['show_mac_address_table'] = cli_cmd_json(session, 'show mac address-table | json', delay=2)
     show['show_vlan'] = cli_cmd_json(session, 'show vlan | json', delay=2)
+    show['show_vrf_interface'] = cli_cmd_json(session, 'show vrf interface | json', delay=2)
+    show['show_vrf'] = cli_cmd_json(session, 'show vrf | json', delay=2)
     device = nxosBuildDevice(show)
     return device
 

@@ -1,27 +1,232 @@
-from write_pyxl_nxos import mkXLSX, Headline, write_hl_category
-
-
+from write_pyxl_nxos import mkXLSX, Headline, write_hl_category, write_obj, write, mkFont, setalignment, \
+    write_merge, setfontcolor, setfill, mkPattern
+from pprint import pprint
 deviceHeadline = Headline()
-deviceHeadline.keylist = []
-deviceHeadline.namelist = ['Hostname', 'S/N', 'Version']
+deviceHeadline.keydict = {'name': 'Hostname',
+                          'serial': 'S/N',
+                          'version': 'Version',
+                          'chassis': 'Chassis'}
+deviceHeadline.namelist = ['Hostname', 'S/N', 'Version', 'Chassis']
+keydict = [{'name': {'data': 'host_name', 'hl': 'Hostname'}},
+           {'serial': {'data': 'proc_board_id', 'hl': 'S/N'}},
+           {'version': {'data': 'kickstart_ver_str', 'hl': 'Version'}},
+           {'chassis': {'data': 'chassis_id', 'hl': 'Chassis'}},
+           {'uptime': {'data': 'uptime', 'hl': 'Uptime'}}]
+
+
+
+
+
+
+def getkeys(dict):
+    list = []
+    for a in dict.keys():
+        list.append(a)
+    return list
+
+
+class RowObject:
+    def __init__(self, device, key):
+        if key == 'hl':
+            # try:
+            self.header = True
+            for a in device.keylist:
+                k = getkeys(a)
+                if len(k) == 1:
+                    setattr(self, k[0], a[k[0]][key])
+            # except:
+            #    print('Failed to create Headers Row Object')
+        else:
+            try:
+                for a in device.keylist:
+                    k = getkeys(a)
+                    if len(k) == 1:
+                        if hasattr(device, k[0]):
+                            attr = getattr(device, k[0])
+                            setattr(self, k[0], attr)
+                        else:
+                            setattr(self, k[0], '')
+            except:
+                print('Failed to create data Row Object')
+
+    def setdata(self, key, data):
+        try:
+            setattr(self, key, data)
+        except:
+            print(f'Failed to set Data for key: {key}')
+
+
+class Table:
+    def __init__(self):
+        self.headline = ''
+        self.keys = []
+        self.row = 1
+        self.col = 1
+        self.endcol = 1
+        self.endrow = 1
+        self.rowobject = []
+
+    def setkeys(self, keylist):
+        self.keys = keylist
+
+    def setheadline(self, hl):
+        self.headline = hl
+
+    def setrowcol(self, row, col):
+        self.row = row
+        self.col = col
+
+    def setendcol(self):
+        self.endcol = self.col + len(self.keys)
+
+    def writeheadline(self):
+        # Uses worksheet function "merge_cells". Need to redo...
+        try:
+            newrow = write_merge(self.ws, self.row, self.col, self.row, self.endcol, self.headline)
+            setalignment(self.ws, self.row, self.col)
+            setfontcolor(self.ws, self.row, self.col, COLOR='FFFFFF')
+            setfill(self.ws, self.row, self.col, COLOR='0081E2')
+            self.setrowcol(newrow, self.col)
+        except:
+            print(f'Failed to write Headline: {self.headline}')
+
+    def addrow(self, rowobject):
+        try:
+            self.rowobject.append(rowobject)
+        except:
+            print('Failed to add Row Object')
+
+    def setworksheet(self, WS):
+        try:
+            setattr(self, 'ws', WS)
+        except:
+            print('Failed to set Worksheet')
+
+    def sortrows(self, key):
+        pass
+
+    def writerow(self, rowobject, highlight=False):
+        col = self.col
+        for a in self.keys:
+            b = a.keys()
+            write(self.ws, self.row, col, a)
+            col = col + 1
+        self.setrowcol(self.row + 1, self.col)
+
+    def highlight(self, col, testkey, testdata, TEST):
+        for a in TEST:
+            pprint(a)
+            key = a['key']
+            if testkey == key:
+                for b in a['test']:
+                    if b['data'] == testdata:
+                        setfill(self.ws, self.row, col, b['fill'])
+                        setfontcolor(self.ws, self.row, col, b['font'])
+                    else:
+                        pass
+
+
+    def writeallrows(self, hl=False, tests = []):
+        for a in self.rowobject:
+            col = self.col
+            for b in self.keys:
+                bkey = b.keys()
+                for d in bkey:
+                    e = d
+                if hasattr(a, e):
+                    c = getattr(a, e)
+                else:
+                    c = ''
+                write(self.ws, self.row, col, c)
+                if hl:
+                    self.highlight(col, d, c, tests)
+
+
+                try:
+                    if a.header:
+                        setfill(self.ws, self.row, col, COLOR='33CCFF')
+                except:
+                    pass
+                col = col + 1
+            self.setrowcol(self.row + 1, self.col)
+
+    def writetable(self):
+        print(f'Building Table: {self.headline}')
+        try:
+            self.writeheadline()
+            self.writeallrows()
+        except:
+            print(f'Failed to build Table: {self.headline}')
+
 
 
 def build_workbook(filename, TAB='HW List'):
     wb = mkXLSX(filename, TAB)
 
 
+def getKeys(dict):
+    list = []
+    for a in dict.keys():
+        list.append(a)
+    return list
 
-def writeDevice(device):
+
+def parseKeys(dict, key):
+    list = []
+    for a in dict:
+        try:
+            b = getKeys(a)
+            c = b[0]
+            item = a[c][key]
+            list.append(item)
+        except:
+            print(f'Not able to parse Dictionary: {b[0]}')
+    return list
+
+
+def writeDevice(devices):
     ROW = 0
     COL = 1
+    # Process Device
+    device.newattr('show_version', keydict)
+    hl = parseKeys(keydict, 'hl')
+    data = parseKeys(keydict, 'data')
     filename = device.name + '-' + device.serial + '.xlsx'
     TAB = 'System'
     wb = mkXLSX(filename, TAB)
     system = wb.active
-    ROW = write_hl_category(system, ROW, COL, 'System', deviceHeadline.namelist)
+    nxosTable = buildtable(device_list, 'Nexus Switches')
+    nxosTable.setworksheet(system)
+    nxosTable.writeallrows()
+    # ROW = write_hl_category(system, ROW, COL, 'System', hl)
+    # ROW = write_obj(system, [device], data, ROW, COL)
     wb.save(filename)
 
 
 def writePortMap(device):
     pass
 
+
+def buildtable(devices, headline):
+    newTable = Table()
+    newTable.setkeys(devices[0].keylist)
+    newTable.setheadline(headline)
+    newTable.setendcol()
+    list = [RowObject(devices[0], 'hl')]
+    for a in devices:
+        rowdevice = RowObject(a, 'data')
+        list.append(rowdevice)
+    newTable.rowobject = list
+    return newTable
+
+
+def writetable(table, file, hl=False, TEST=[]):
+    filename = file
+    TAB = 'System'
+    wb = mkXLSX(filename, TAB)
+    system = wb.active
+    # table = buildtable(device_list, 'Nexus Switches')
+    table.setworksheet(system)
+    table.writeheadline()
+    table.writeallrows(hl=hl, tests=TEST)
+    wb.save(filename)
